@@ -1,0 +1,372 @@
+attachments(update) => i m not satisfied
+nepali date picker = http://keith-wood.name/calendarsPicker.html, http://keith-wood.name/calendarsPicker.html
+
+http://www.bsourcecode.com/2012/11/rules-and-validation-in-yii-model/
+
+http://www.yiiframework.com/wiki/428/drills-search-by-a-has_many-relation-in-yii-1-1/
+
+http://www.yiiframework.com/wiki/281/searching-and-sorting-by-related-model-in-cgridview
+
+http://stackoverflow.com/questions/12170102/how-to-iterate-over-yii-cactivedataprovider-object
+
+http://www.yiiplayground.com/index.php?r=InternationalizationModule/datetime/basic
+
+
+<?php
+$row=RouteCost::model()->findAll();
+
+//$row->execute();//execute the query
+$json_data=array();//create the array
+foreach($row as $rec)//foreach loop
+{
+    $json_array['id']=$rec['id'];
+    $json_array['route']=$rec['route_id'];
+    $json_array['cost']=$rec['route_cost'];
+    $json_array['status']=$rec['cost_status'];
+//here pushing the values in to an array
+    array_push($json_data,$json_array);
+
+}
+
+//built in PHP function to encode the data in to JSON format
+echo json_encode($json_data);exit;
+?>
+
+yii-solr to search
+
+
+
+
+$num = 100;
+echo str_pad($num, 10, "0", STR_PAD_LEFT);
+alert in skip if no driver in drive assign
+
+
+
+<?php
+
+class DailyBusQueueController extends Controller
+{
+    /**
+     * @var string the default layout for the views. Defaults to '//layouts/column2', meaning
+     * using two-column layout. See 'protected/views/layouts/column2.php'.
+     */
+    public $layout='//layouts/column1';
+
+    /**
+     * @return array action filters
+     */
+    public function filters()
+    {
+        return array(
+            'accessControl', // perform access control for CRUD operations
+        );
+    }
+
+    /**
+     * Specifies the access control rules.
+     * This method is used by the 'accessControl' filter.
+     * @return array access control rules
+     */
+//    public function accessRules()
+//    {
+//        return array(
+//            array('allow',  // allow all users to perform 'index' and 'view' actions
+//                'actions'=>array('index','view'),
+//                'users'=>array('*'),
+//            ),
+//            array('allow', // allow authenticated user to perform 'create' and 'update' actions
+//                'actions'=>array('create','update'),
+//                'users'=>array('@'),
+//            ),
+//            array('allow', // allow admin user to perform 'admin' and 'delete' actions
+//                'actions'=>array('admin','delete'),
+//                'users'=>array('admin'),
+//            ),
+//            array('deny',  // deny all users
+//                'users'=>array('*'),
+//            ),
+//        );
+//    }
+
+    /**
+     * Displays a particular model.
+     * @param integer $id the ID of the model to be displayed
+     */
+    public function actionView($id)
+    {
+        $this->render('dailyBusQueue',array(
+            'model'=>$this->loadModel($id),
+        ));
+    }
+
+    /**
+     * Creates a new model.
+     * If creation is successful, the browser will be redirected to the 'view' page.
+     */
+    public function actionCreate()
+    {
+        $model=new DailyBusQueue;
+        $route_id = $_GET['id'];
+
+        $criteria = new CDbCriteria();
+        $criteria->condition = 'route_id =:route_id AND status =:status';
+        $criteria->order = 'route_time ASC';
+        $criteria->params = array(':route_id' => $route_id, ':status'=>1);
+        $routeTime = RouteTime::model()->findAll($criteria);
+        $routeTime_no = count($routeTime);
+
+        $routeCost = RouteCost::model()->findByAttributes(array('route_id'=>$route_id, 'cost_status'=>1));
+        if(empty($routeTime)){
+            $user = Yii::app()->getComponent('user');
+            $user->setFlash(
+                'error',
+                "<strong>No route time. Set the route time first. </strong>"
+            );
+            $this->redirect(array('Route/'.$route_id));
+        }
+        elseif(empty($routeCost)){
+            $user = Yii::app()->getComponent('user');
+            $user->setFlash(
+                'error',
+                "<strong>No route cost. Set the cost first. </strong>"
+            );
+            $this->redirect(array('Route/'.$route_id));
+        }
+        else{
+// Uncomment the following line if AJAX validation is needed
+// $this->performAjaxValidation($model);
+
+            if(isset($_POST['DailyBusQueue']))
+            {
+                date_default_timezone_set('Asia/Kathmandu');
+                $model->attributes=$_POST['DailyBusQueue'];
+
+                /***/
+                $criteria2 = new CDbCriteria();
+                $criteria2->condition = 'route_id =:route_id';
+                $criteria2->order = 'id DESC';
+                $criteria2->limit = 1;
+                $criteria2->params = array(':route_id' => $route_id);
+                $dailyBusQueue = DailyBusQueue::model()->findAll($criteria2);
+
+                $criteria1 = new CDbCriteria();
+                $criteria1->condition = 'route_id =:route_id AND bus_status =:bus_status';
+                $criteria1->order = 'queue DESC';
+                $criteria1->limit = 1;
+                $criteria1->params = array(':route_id' => $route_id, ':bus_status'=>1);
+                $busInsideRoute = BusInsideRoute::model()->findAll($criteria1);
+                foreach($busInsideRoute as $busInside){
+                    $lastBus = $busInside->queue;
+                }
+
+                $queue = new SplQueue();
+                if(empty($dailyBusQueue)){
+                    $nextqueue = 0;
+                }
+                elseif(!empty($dailyBusQueue)){
+                    foreach($dailyBusQueue as $busQueue){
+                        $queueSerialStr = $busQueue->queue_serial;
+                    }
+                    $queueSerial = end(explode(', ', $queueSerialStr));
+                    if($lastBus > $queueSerial){
+                        $nextqueue = $queueSerial+1;
+                    }else{
+                        $nextqueue = 0;
+                    }
+                }
+
+                for($i = 0; $i <= ($routeTime_no-1); $i++){
+                    $queue->push($nextqueue);
+                    if($lastBus > $nextqueue){
+                        $nextqueue = $nextqueue+1;
+                    }else{
+                        $nextqueue = 0;
+                    }
+                }
+
+                $busQueue_array = array();
+                $bus_id_arr = array();
+                foreach($queue as $q){
+                    $busInsideRouteAll = BusInsideRoute::model()->findAllByAttributes(array('route_id'=>$route_id, 'bus_status'=>1, 'queue'=>$q));
+                    foreach($busInsideRouteAll as $busIn){
+                        $busId = $busIn->bus_id;
+                        $bus_id_arr[] = $busId;
+                    }
+                    $busQueue_array[] = $q;
+                }
+                $routeTime_arr = array();
+                foreach($routeTime as $time){
+                    $time = $time->id;
+                    $routeTime_arr[] = $time;
+                }
+
+                /***/
+                $model->bus_id = implode(', ', $bus_id_arr);
+                $model->time_id = implode(', ', $routeTime_arr);
+                $model->queue_serial = implode(', ', $busQueue_array);
+                $model->created_date = date('Y-m-d H:i:s', time());
+                $model->bus_status = 1;
+                $model->route_id = $route_id;
+                $model->created_by = Yii::app()->user->user_ac_id;
+                $checkSameDate = DailyBusQueue::model()->findByAttributes(array('route_id'=>$route_id, 'queue_date'=>$model->queue_date));
+                if(!empty($checkSameDate)){
+                    $user = Yii::app()->getComponent('user');
+                    $user->setFlash(
+                        'error',
+                        "<strong>Queue Already Created For This Date ($model->queue_date). </strong>"
+                    );
+                    $this->redirect(array('DailyBusQueue/'.$checkSameDate->id));
+                }else{
+                    if($model->save()){
+                        $this->redirect(array('view','id'=>$model->id));
+                    }
+                }
+            }
+            $this->render('create',array(
+                'model'=>$model, 'route_id'=>$route_id,
+            ));
+        }
+    }
+
+    public function actionBusRemove(){
+        if(isset($_POST['remove'])){
+            $rowId = $_POST['id'];    //pk of row
+            $remove_bus_id = $_POST['bus_id'];   //bus id that must be removed.
+            $daily_bus_queue = DailyBusQueue::model()->findByPk($rowId);
+            $prev_queue_bus_id = $daily_bus_queue->bus_id;
+            $route_id = $daily_bus_queue->route_id;
+            $prev_bus_serial = $daily_bus_queue->queue_serial;
+            $prev_bus_serial_last = substr($prev_bus_serial, -1);
+
+            $criteria1 = new CDbCriteria();
+            $criteria1->condition = 'route_id =:route_id AND bus_status =:bus_status';
+            $criteria1->order = 'queue DESC';
+            $criteria1->limit = 1;
+            $criteria1->params = array(':route_id' => $route_id, ':bus_status'=>1);
+            $busInsideRoute = BusInsideRoute::model()->findAll($criteria1);
+            foreach($busInsideRoute as $busInside){
+                $last_Bus_Serial = $busInside->queue;
+            }
+
+            if($last_Bus_Serial > $prev_bus_serial_last){
+                $new_bus_serial = substr($prev_bus_serial, -1) + 1;    //get serial for new bus that is to be added
+            }else{
+                $new_bus_serial = 0;
+            }
+/*--------------------------------------------*/
+/*            $next_bus_to_add = BusInsideRoute::model()->findByAttributes(array('route_id'=>$route_id, 'queue'=>$new_bus_serial, 'status'=>1));
+
+            $prev_queue_bus_id_arr = explode(', ', $prev_queue_bus_id);
+
+            $queue_after_bus_remove_array = array_diff($prev_queue_bus_id_arr, array($remove_bus_id));
+            array_push($queue_after_bus_remove_array, $next_bus_to_add->bus_id);
+            $daily_bus_queue->saveAttributes(array('bus_id'=> implode(', ', $queue_after_bus_remove_array)));  //replaced with new bus and saved;
+
+            $bus_inside_route_all = BusInsideRoute::model()->findAllByAttributes(array('route_id'=>$route_id, 'status'=>1));
+
+            foreach($bus_inside_route_all as $bus_inside_route_single){
+                $bus_inside_route_single_queue = $bus_inside_route_single->queue;
+               // if(){}
+            }*/
+            /*--------------------------------------------*/
+            $this->redirect(array('DailyBusQueue/'.$rowId));
+        }
+    }
+
+    /**
+     * Updates a particular model.
+     * If update is successful, the browser will be redirected to the 'view' page.
+     * @param integer $id the ID of the model to be updated
+     */
+    public function actionUpdate($id)
+    {
+        $model=$this->loadModel($id);
+
+// Uncomment the following line if AJAX validation is needed
+// $this->performAjaxValidation($model);
+
+        if(isset($_POST['DailyBusQueue']))
+        {
+            $model->attributes=$_POST['DailyBusQueue'];
+            if($model->save())
+                $this->redirect(array('view','id'=>$model->id));
+        }
+
+        $this->render('update',array(
+            'model'=>$model,
+        ));
+    }
+
+    /**
+     * Deletes a particular model.
+     * If deletion is successful, the browser will be redirected to the 'admin' page.
+     * @param integer $id the ID of the model to be deleted
+     */
+    public function actionDelete($id)
+    {
+        if(Yii::app()->request->isPostRequest)
+        {
+// we only allow deletion via POST request
+            $this->loadModel($id)->delete();
+
+// if AJAX request (triggered by deletion via admin grid view), we should not redirect the browser
+            if(!isset($_GET['ajax']))
+                $this->redirect(isset($_POST['returnUrl']) ? $_POST['returnUrl'] : array('admin'));
+        }
+        else
+            throw new CHttpException(400,'Invalid request. Please do not repeat this request again.');
+    }
+
+    /**
+     * Lists all models.
+     */
+    public function actionIndex()
+    {
+        $dataProvider=new CActiveDataProvider('DailyBusQueue');
+        $this->render('index',array(
+            'dataProvider'=>$dataProvider,
+        ));
+    }
+
+    /**
+     * Manages all models.
+     */
+    public function actionAdmin()
+    {
+        $model=new DailyBusQueue('search');
+        $model->unsetAttributes();  // clear any default values
+        if(isset($_GET['DailyBusQueue']))
+            $model->attributes=$_GET['DailyBusQueue'];
+
+        $this->render('admin',array(
+            'model'=>$model,
+        ));
+    }
+
+    /**
+     * Returns the data model based on the primary key given in the GET variable.
+     * If the data model is not found, an HTTP exception will be raised.
+     * @param integer the ID of the model to be loaded
+     */
+    public function loadModel($id)
+    {
+        $model=DailyBusQueue::model()->findByPk($id);
+        if($model===null)
+            throw new CHttpException(404,'The requested page does not exist.');
+        return $model;
+    }
+
+    /**
+     * Performs the AJAX validation.
+     * @param CModel the model to be validated
+     */
+    protected function performAjaxValidation($model)
+    {
+        if(isset($_POST['ajax']) && $_POST['ajax']==='daily-bus-queue-form')
+        {
+            echo CActiveForm::validate($model);
+            Yii::app()->end();
+        }
+    }
+}

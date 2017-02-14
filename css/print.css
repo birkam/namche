@@ -1,0 +1,70 @@
+
+@media print {
+    /* print.css */
+    body {line-height:1.5;font-family:"Helvetica Neue", Arial, Helvetica, sans-serif;color:#000;background:none;font-size:10pt; padding: 10px;}
+    .container {background:none;}
+    hr {background:#ccc;color:#ccc;width:100%;height:2px;margin:2em 0;padding:0;border:none;}
+    hr.space {background:#fff;color:#fff;visibility:hidden;}
+    h1, h2, h3, h4, h5, h6 {font-family:"Helvetica Neue", Arial, "Lucida Grande", sans-serif;}
+    code {font:.9em "Courier New", Monaco, Courier, monospace;}
+    a img {border:none;}
+    p img.top {margin-top:0;}
+    blockquote {margin:1.5em;padding:1em;font-style:italic;font-size:.9em;}
+    .small {font-size:.9em;}
+    .large {font-size:1.1em;}
+    .quiet {color:#999;}
+    .hide {display:none;}
+    a:link, a:visited {background:transparent;font-weight:700;text-decoration:underline;}
+    a:link:after, a:visited:after {content:" (" attr(href) ")";font-size:90%;}
+
+    #topNav{visibility: hidden;}
+    .leftNav{visibility: hidden;}
+    #header{visibility: hidden;}
+    #footer{visibility: hidden;}
+    .content{
+        z-index:100;
+        position: absolute;
+        top:0;
+        right: 2%;
+        left: 2%;
+        width: 96%;
+    }
+    .content input, a{
+    visibility: hidden;
+     }
+
+    .content{
+        font-size: 14px;
+    }
+    .content table{
+        width: 100%;
+    }
+    .content title h5{
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+        position: relative;
+        align-content: center;
+    }
+    .content th>a{
+        visibility: visible;!important;
+    }
+    .content table>tr>td:last-child{
+        visibility: hidden;
+    }
+    .content summary{
+          visibility: visible;!important;
+      }
+    a[href]:after {
+        content: none !important;
+    }
+    .print-receipt{
+        width:1000px;
+        height:500px;
+        border:none;
+    }
+    .receipt-items{
+        margin-top:20px;
+    }
+
+}
