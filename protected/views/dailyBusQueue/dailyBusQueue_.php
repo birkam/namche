@@ -21,9 +21,8 @@ $this->widget('bootstrap.widgets.TbAlert', array(
  * Date: 3/1/15
  * Time: 10:59 AM
  */
-require_once('/../../nepalidate/nepali_calendar.php');
 $id = $model->id;
-$calendar = new Nepali_Calendar();
+$calendar = new DateConverter();
 $engDate = date('Y-m-d', time());
 if(!empty($engDate)){
     list($eDate, $emonth, $eday) =explode("-",$engDate);

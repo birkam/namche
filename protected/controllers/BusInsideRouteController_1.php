@@ -56,8 +56,7 @@ class BusInsideRouteController extends RController
     }
 
     public function actionRemove($id){
-        require_once('/var/www/nepalidate/nepali_calendar.php');
-        $calendar = new Nepali_Calendar();
+        $calendar = new DateConverter();
         $engDate = date('Y-m-d', time());
         if(!empty($engDate)){
             list($eDate, $emonth, $eday) =explode("-",$engDate);

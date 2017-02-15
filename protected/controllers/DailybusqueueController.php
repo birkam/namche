@@ -47,7 +47,9 @@ class DailyBusQueueController extends RController
                         "It seems queue is broken. Please change queue and click <strong>SUBMIT CHANGES</strong> button"
                     );
                     $this->redirect(array('/BusInsideRoute/QueueChart/'.$route_id));
-                }else echo 1;
+                }else {
+
+                }
             }
         }else {
             throw new CHttpException(400,'Invalid request. Please do not repeat this request again.');

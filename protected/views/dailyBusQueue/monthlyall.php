@@ -3,8 +3,7 @@
         <option value="">Year</option>
         <?php
         date_default_timezone_set('Asia/Kathmandu');
-        require_once('/../../nepalidate/nepali_calendar.php');
-        $calendar = new Nepali_Calendar();
+        $calendar = new DateConverter();
         $engDate = date('Y-m-d', time());
         if(!empty($engDate)){
             list($eDate, $emonth, $eday) =explode("-",$engDate);

@@ -35,7 +35,7 @@ class CheckedcostconfigurationController extends RController
     }
 
     public function actionDateConvert(){
-        $calendar = new Nepali_Calendar();
+        $calendar = new DateConverter();
         $nepDate = @$_POST['nepDate'];
         if(!empty($nepDate)){
             list($nyear, $nmonth, $nday) =explode("-",$nepDate);
@@ -83,8 +83,7 @@ class CheckedcostconfigurationController extends RController
         $rid = @$_GET['rid'];
         $dbq_id = @$_GET['dbq_id'];
         $tid = @$_GET['tid'];
-        require_once('../'.Yii::app()->getBaseUrl(false).'/nepalidate/nepali_calendar.php');
-        $calendar = new Nepali_Calendar();
+        $calendar = new DateConverter();
         $engDate = date('Y-m-d', time());
         if(!empty($engDate)){
             list($eDate, $emonth, $eday) =explode("-",$engDate);
