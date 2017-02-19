@@ -210,7 +210,7 @@ elseif($mod == 'bir'){
             array(
                 'class'=>'bootstrap.widgets.TbButtonColumn',
                 'header'=>'<a>Actions</a>',
-                'template' => '{view}{assign}',
+                'template' => '{view}{assign}{assign1}',
                 'buttons' => array(
                     'view' => array(
                         'label'=> 'View',
@@ -235,6 +235,15 @@ elseif($mod == 'bir'){
                         'icon' => 'icon-edit',
 
                         'url'=>'Yii::app()->controller->createUrl("DailyBusQueue/Create",array("id"=>$data->id))',
+                        'options'=>array(
+                            'class'=>'btn btn-small'
+                        ),
+                    ),
+                    'assign1'=>array(
+                        'label'=>'Daily Bus Queue1',
+                        'icon' => 'icon-edit',
+
+                        'url'=>'Yii::app()->controller->createUrl("DailyBusQueue/Create1",array("route_id"=>$data->id))',
                         'options'=>array(
                             'class'=>'btn btn-small'
                         ),

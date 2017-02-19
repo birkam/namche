@@ -55,6 +55,71 @@ class DailyBusQueueController extends RController
             throw new CHttpException(400,'Invalid request. Please do not repeat this request again.');
         }
     }
+
+    public function checkroutevalid($routeTime, $routeCost, $route_id){
+        if(empty($routeTime)){
+            $user = Yii::app()->getComponent('user');
+            $user->setFlash(
+                'error',
+                "<strong>No route time. Set the route time first. </strong>"
+            );
+            $this->redirect(array('Route/'.$route_id));
+        }
+        elseif(empty($routeCost)){
+            $user = Yii::app()->getComponent('user');
+            $user->setFlash(
+                'error',
+                "<strong>No route cost. Set the cost first. </strong>"
+            );
+            $this->redirect(array('Route/'.$route_id));
+        }else{
+            return true;
+        }
+    }
+    public function actionCreate1($route_id){
+        $model=new DailyBusQueue;
+        $criteria = new CDbCriteria();
+        $criteria->condition = 'route_id =:route_id AND status =:status';
+        $criteria->order = 'route_time ASC';
+        $criteria->params = array(':route_id' => $route_id, ':status'=>1);
+        $routeTime = RouteTime::model()->findAll($criteria);
+        $routeTime_no = count($routeTime);
+        $routeCost = RouteCost::model()->findByAttributes(array('route_id'=>$route_id, 'cost_status'=>1));
+
+        $valid = $this->checkroutevalid($routeTime, $routeCost, $route_id);
+        if($valid==true){
+            $this->performAjaxValidation($model);
+            $some_arr = array();
+            if(isset($_POST['DailyBusQueue']))
+            {
+                $model->attributes=$_POST['DailyBusQueue'];
+                /***/
+                $criteria2 = new CDbCriteria();
+                $criteria2->condition = 'route_id =:route_id';
+                $criteria2->order = 'id DESC';
+                $criteria2->limit = 1;
+                $criteria2->params = array(':route_id' => $route_id);
+                $dailyBusQueue_last = DailyBusQueue::model()->findAll($criteria2);
+//                $list= Yii::app()->db->createCommand('select * from tbl_daily_bus_queue tdbq right join tbl_daily_queued_bus tdqb
+// on tdqb.daily_bus_queue_id=tdbq.id where tdbq.route_id='.$route_id.' order by tdbq.id desc limit 1')->queryAll();
+                $list = Yii::app()->db->createCommand('select * from tbl_daily_queued_bus tdqb 
+outer apply (select * from tbl_daily_bus_queue tdbq where tdbq.route_id='.$route_id.' order by tdbq.id desc limit 1) tdbq')->queryAll();
+                var_dump($list);exit;
+
+                $criteria1 = new CDbCriteria();
+                $criteria1->condition = 'route_id =:route_id AND bus_status =:bus_status';
+                $criteria1->order = 'queue DESC';
+                $criteria1->limit = 1;
+                $criteria1->params = array(':route_id' => $route_id, ':bus_status'=>1);
+                $busInsideRoute = BusInsideRoute::model()->find($criteria1);
+                $lastBus = $busInsideRoute->queue;
+            }
+        }
+
+        $this->render('create',array(
+            'model'=>$model, 'route_id'=>$route_id,
+        ));
+    }
     /**
      * Creates a new model.
      * If creation is successful, the browser will be redirected to the 'view' page.
@@ -95,7 +160,6 @@ class DailyBusQueueController extends RController
             $some_arr = array();
             if(isset($_POST['DailyBusQueue']))
             {
-                date_default_timezone_set('Asia/Kathmandu');
                 $model->attributes=$_POST['DailyBusQueue'];
                 /***/
                 $criteria2 = new CDbCriteria();
