@@ -98,21 +98,51 @@ class DailyBusQueueController extends RController
                 $criteria2->condition = 'route_id =:route_id';
                 $criteria2->order = 'id DESC';
                 $criteria2->limit = 1;
+                $criteria2->select = 'id';
                 $criteria2->params = array(':route_id' => $route_id);
-                $dailyBusQueue_last = DailyBusQueue::model()->findAll($criteria2);
+                $dailyBusQueue_id_last = DailyBusQueue::model()->find($criteria2)->id;
+
+                $queue = Yii::app()->db->createCommand('SELECT count(id) as total_bus_in_route, (SELECT queue FROM `tbl_bus_inside_route` where route_id='.$route_id.' and bus_status=1 order by queue desc limit 1) as lastqueue_serial_no FROM `tbl_bus_inside_route` where route_id='.$route_id.' and bus_status=1')->queryRow();
+                if($queue['total_bus_in_route']>0) {
+                    $this->checkqueueserial($route_id);
+                    $queue_new=[];
+                    if ($dailyBusQueue_id_last > 0) {
+                        $dailyQueuedBus_last = DailyQueuedBus::model()->findAllByAttributes(['daily_bus_queue_id' => $dailyBusQueue_id_last]);
+                        $nextqueue = 0;
+
+                        for($i = 0; $i <= ($routeTime_no-1); $i++){
+                            array_push($queue_new,$nextqueue);
+                            if($queue['lastqueue_serial_no'] > $nextqueue){
+                                $nextqueue = $nextqueue+1;
+                            }else{
+                                $nextqueue = 0;
+                            }
+                        }
+                    } else {
+                        $nextqueue = 0;
+
+                        for($i = 0; $i <= ($routeTime_no-1); $i++){
+                            array_push($queue_new,$nextqueue);
+                            if($queue['lastqueue_serial_no'] > $nextqueue){
+                                $nextqueue = $nextqueue+1;
+                            }else{
+                                $nextqueue = 0;
+                            }
+                        }
+                    }
+                    var_dump($queue_new);
+                }else{
+                    Yii::app()->user->setFlash('error', "No Bus Found in Route!!!");
+                    $this->redirect(array('dailybusqueue/create/'.$route_id));
+                    die();
+                }
+                exit;
 //                $list= Yii::app()->db->createCommand('select * from tbl_daily_bus_queue tdbq right join tbl_daily_queued_bus tdqb
 // on tdqb.daily_bus_queue_id=tdbq.id where tdbq.route_id='.$route_id.' order by tdbq.id desc limit 1')->queryAll();
                 $list = Yii::app()->db->createCommand('select * from tbl_daily_queued_bus tdqb 
 outer apply (select * from tbl_daily_bus_queue tdbq where tdbq.route_id='.$route_id.' order by tdbq.id desc limit 1) tdbq')->queryAll();
+//                $list = Yii::app()->db->createCommand('select tdqb.*, (SELECT tdbq.id FROM tbl_daily_bus_queue tdbq WHERE tdbq.route_id = '.$route_id.' ORDER BY tdbq.id DESC LIMIT 1 ) AS VALUE from tbl_daily_queued_bus tdqb')->queryAll();
                 var_dump($list);exit;
-
-                $criteria1 = new CDbCriteria();
-                $criteria1->condition = 'route_id =:route_id AND bus_status =:bus_status';
-                $criteria1->order = 'queue DESC';
-                $criteria1->limit = 1;
-                $criteria1->params = array(':route_id' => $route_id, ':bus_status'=>1);
-                $busInsideRoute = BusInsideRoute::model()->find($criteria1);
-                $lastBus = $busInsideRoute->queue;
             }
         }
 
