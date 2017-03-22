@@ -29,7 +29,24 @@ class DailyBusQueueController extends RController
         $bus_replace = BusInsideRoute::model()->with('bus')->findAllByAttributes(array('route_id'=>$model->route_id, 'bus_status'=>1));
         $this->render('dailyBusQueue',array(
             'model'=>$model,
-            'bus_replace'=>$bus_replace
+            'bus_replace'=>$bus_replace,
+        ));
+    }
+    public function actionView1($id)
+    {
+        $model=$this->loadModel($id);
+        $bus_replace = BusInsideRoute::model()->with('bus')->findAllByAttributes(array('route_id'=>$model->route_id, 'bus_status'=>1));
+        $bus_queued = DailyQueuedBus::model()->findAllByAttributes(array('daily_bus_queue_id'=>$model->id));
+        $route_cost = RouteCost::model()->findByAttributes(array('route_id'=>$model->route_id, 'cost_status'=>1));
+        $routeInfo = Route::model()->findByPk($model->route_id);
+
+        $this->render('dailyBusQueue1',array(
+            'model'=>$model,
+            'bus_replace'=>$bus_replace,
+            'bus_queued'=>$bus_queued,
+            'route_cost'=>$route_cost,
+            'route_info'=>$routeInfo,
+
         ));
     }
     public  function checkqueueserial($route_id){
@@ -89,60 +106,85 @@ class DailyBusQueueController extends RController
         $valid = $this->checkroutevalid($routeTime, $routeCost, $route_id);
         if($valid==true){
             $this->performAjaxValidation($model);
-            $some_arr = array();
             if(isset($_POST['DailyBusQueue']))
             {
                 $model->attributes=$_POST['DailyBusQueue'];
+                $checkSameDate = DailyBusQueue::model()->findByAttributes(array('route_id'=>$route_id, 'queue_date'=>$model->queue_date));
+                if(!empty($checkSameDate)){
+                    $user = Yii::app()->getComponent('user');
+                    $user->setFlash(
+                        'error',
+                        "<strong>Queue Already Created For This Date ($model->queue_date). </strong>"
+                    );
+                    $this->redirect(array('DailyBusQueue/view1/'.$checkSameDate->id));
+                    die();
+                }
                 /***/
                 $criteria2 = new CDbCriteria();
                 $criteria2->condition = 'route_id =:route_id';
                 $criteria2->order = 'id DESC';
                 $criteria2->limit = 1;
-                $criteria2->select = 'id';
+//                $criteria2->select = 'id';
                 $criteria2->params = array(':route_id' => $route_id);
-                $dailyBusQueue_id_last = DailyBusQueue::model()->find($criteria2)->id;
-
+                $dailyBusQueue_last = DailyBusQueue::model()->find($criteria2);
+                if(!empty($dailyBusQueue_last)){
+                    $dailyBusQueue_id_last=$dailyBusQueue_last->id;
+                }else{
+                    $dailyBusQueue_id_last=0;
+                }
                 $queue = Yii::app()->db->createCommand('SELECT count(id) as total_bus_in_route, (SELECT queue FROM `tbl_bus_inside_route` where route_id='.$route_id.' and bus_status=1 order by queue desc limit 1) as lastqueue_serial_no FROM `tbl_bus_inside_route` where route_id='.$route_id.' and bus_status=1')->queryRow();
                 if($queue['total_bus_in_route']>0) {
                     $this->checkqueueserial($route_id);
                     $queue_new=[];
                     if ($dailyBusQueue_id_last > 0) {
-                        $dailyQueuedBus_last = DailyQueuedBus::model()->findAllByAttributes(['daily_bus_queue_id' => $dailyBusQueue_id_last]);
-                        $nextqueue = 0;
-
-                        for($i = 0; $i <= ($routeTime_no-1); $i++){
-                            array_push($queue_new,$nextqueue);
-                            if($queue['lastqueue_serial_no'] > $nextqueue){
-                                $nextqueue = $nextqueue+1;
+                        foreach ($routeTime as $rt) {
+                            $dailyQueuedBus_last = DailyQueuedBus::model()->findByAttributes(['daily_bus_queue_id' => $dailyBusQueue_id_last, 'time_id'=>$rt->id]);
+                            // foreach ($dailyQueuedBus_last as $dl) {
+                            if(!empty($dailyQueuedBus_last)) {
+                                $queue_serial_new = ($dailyQueuedBus_last->queue_serial + $routeTime_no);
+                                if ($queue_serial_new > $queue['lastqueue_serial_no']) {
+                                    $queue_serial_new = $queue_serial_new - $queue['total_bus_in_route'];
+                                }
+                                $busInsideRoute = BusInsideRoute::model()->findByAttributes(array('route_id' => $route_id, 'bus_status' => 1, 'queue' => $queue_serial_new));
+                                $queue_new[] = ['time_id' => $rt->id, 'queue' => $queue_serial_new, 'bus_id' => $busInsideRoute->bus_id];
                             }else{
-                                $nextqueue = 0;
+                                Yii::app()->user->setFlash('error', "Oops! Error In Time Queue Time Settings!!!");
+                                $this->redirect(array('dailybusqueue/create1?route_id='.$route_id));
+                                die();
                             }
                         }
                     } else {
                         $nextqueue = 0;
-
-                        for($i = 0; $i <= ($routeTime_no-1); $i++){
-                            array_push($queue_new,$nextqueue);
-                            if($queue['lastqueue_serial_no'] > $nextqueue){
-                                $nextqueue = $nextqueue+1;
-                            }else{
+                        foreach ($routeTime as $rt){
+                            $busInsideRoute = BusInsideRoute::model()->findByAttributes(array('route_id'=>$route_id, 'bus_status'=>1, 'queue'=>$nextqueue));
+                            $queue_new[] = ['time_id' => $rt->id, 'queue' => $nextqueue, 'bus_id'=>$busInsideRoute->bus_id];
+                            if($queue['lastqueue_serial_no'] > $nextqueue)
+                                $nextqueue++;
+                            else
                                 $nextqueue = 0;
-                            }
                         }
                     }
-                    var_dump($queue_new);
                 }else{
                     Yii::app()->user->setFlash('error', "No Bus Found in Route!!!");
                     $this->redirect(array('dailybusqueue/create/'.$route_id));
                     die();
                 }
-                exit;
-//                $list= Yii::app()->db->createCommand('select * from tbl_daily_bus_queue tdbq right join tbl_daily_queued_bus tdqb
-// on tdqb.daily_bus_queue_id=tdbq.id where tdbq.route_id='.$route_id.' order by tdbq.id desc limit 1')->queryAll();
-                $list = Yii::app()->db->createCommand('select * from tbl_daily_queued_bus tdqb 
-outer apply (select * from tbl_daily_bus_queue tdbq where tdbq.route_id='.$route_id.' order by tdbq.id desc limit 1) tdbq')->queryAll();
-//                $list = Yii::app()->db->createCommand('select tdqb.*, (SELECT tdbq.id FROM tbl_daily_bus_queue tdbq WHERE tdbq.route_id = '.$route_id.' ORDER BY tdbq.id DESC LIMIT 1 ) AS VALUE from tbl_daily_queued_bus tdqb')->queryAll();
-                var_dump($list);exit;
+                $model->route_id = $route_id;
+                $model->created_date = date('Y-m-d H:i:s', time());
+                $model->created_by = Yii::app()->user->user_ac_id;
+                if($model->save()){
+                    foreach ($queue_new as $qn) {
+                        $m2 = new DailyQueuedBus();
+                        $m2->daily_bus_queue_id=$model->id;
+                        $m2->time_id=$qn["time_id"];
+                        $m2->bus_id=$qn["bus_id"];
+                        $m2->queue_serial=$qn["queue"];
+                        $m2->payment_status=0;
+                        $m2->bus_remove_type=0;
+                        $m2->save();
+                    }
+                    $this->redirect(array('view1', 'id' => $model->id));
+                }
             }
         }
 
@@ -358,6 +400,11 @@ outer apply (select * from tbl_daily_bus_queue tdbq where tdbq.route_id='.$route
         }
     }
 
+    public function actionReplace(){
+//        echo 1; exit;
+        echo $this->renderPartial('replace');
+    }
+
     public function actionTransaction(){
         $this->render('choosetype');
     }
@@ -367,7 +414,7 @@ outer apply (select * from tbl_daily_bus_queue tdbq where tdbq.route_id='.$route
             $date = @$_POST['date'];
             if(!empty($date)){
 //                $checkedCostConf = CheckedCostConfiguration::model()->findAllByAttributes(array('created_nep_date'=>$date));
-                $sql = "SELECT ccc.id id, ccc.created_nep_date, ccc.bus_id bus_id, ccc.checked_rate checked_rate, ccc.checked_others checked_others, ccc.receipt_no receipt_no, co.amount amount, ccc.created_by,
+                $sql = "SELECT ccc.id id, ccc.created_nep_date, ccc.bus_id bus_id, ccc.checked_id checked_id,ccc.checked_rate checked_rate, ccc.checked_others checked_others, ccc.receipt_no receipt_no, co.amount amount, ccc.created_by,
  crc.samiti_sulka crc_samiti_sulka, crc.bhalai_kosh crc_bhalai_kosh, crc.samrakshan crc_samrakshan, crc.ticket crc_ticket, crc.sahayog crc_sahayog, crc.bima crc_bima, crc.bibidh crc_bibidh, crc.mandir crc_mandir, crc.jokhim crc_jokhim, crc.anugaman crc_anugaman, crc.bi_bya_sulka crc_bi_bya_sulka, crc.ma_kosh crc_ma_kosh, crc.route_id route_id, crc.queue_time_id queue_time_id, crc.queue_date queue_date,
  res.samiti_sulka res_samiti_sulka, res.bhalai_kosh res_bhalai_kosh, res.samrakshan res_samrakshan, res.ticket res_ticket, res.sahayog res_sahayog, res.bima res_bima, res.bibidh res_bibidh, res.mandir res_mandir, res.jokhim res_jokhim, res.anugaman res_anugaman, res.bi_bya_sulka res_bi_bya_sulka, res.ma_kosh res_ma_kosh, res.reserve_date reserve_date, res.reserve_time reserve_time
 FROM tbl_checked_cost_configuration ccc

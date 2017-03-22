@@ -174,16 +174,8 @@ class CheckedcostconfigurationController extends RController
             $model->created_nep_date = $nepali_date;
             if(!empty($rid) and !empty($dbq_id)){
                 $dailyBusQueue = DailyBusQueue::model()->findByPk($dbq_id);
-//                $bus_id_ = arr = explode(', ', $dailyBusQueue->bus_id);
-//                $key_of_bus = array_search($bus_id, $bus_id_arr); //finding key of selected bus from bus_id string
-//                $time_id_arr = explode(', ', $dailyBusQueue->time_id);
-//                $time_id = $time_id_arr[$key_of_bus];             //finding time_id of selected bus. (logic = find bus_id position and using that position find time value)
+                $dailyQueued = DailyQueuedBus::model()->findByAttributes(array('bus_id'=>$bus_id,'daily_bus_queue_id'=>$dbq_id));
                 $queue_date = $dailyBusQueue->queue_date;
-                if(empty($dailyBusQueue->payment_status)){
-                    $new_pay_sts = $bus_id;
-                }else{
-                    $new_pay_sts = $dailyBusQueue->payment_status.', '.$bus_id;
-                }
             }
 
             if($model->save()){
@@ -219,7 +211,7 @@ class CheckedcostconfigurationController extends RController
                     $route_cost->payment_type = $pt;
                     $route_cost->created_nep_date = $nepali_date;
                     if($route_cost->save()){
-                        $dailyBusQueue->saveAttributes(array('payment_status'=>$new_pay_sts));
+                        $dailyQueued->saveAttributes(array('payment_status'=>1));
                     }
                 }
                 $this->redirect(array('view','id'=>$model->id));

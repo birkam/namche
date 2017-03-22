@@ -4,7 +4,8 @@
     <input type="submit" value="Submit" name="submit">
 </form>
 <?php
-if(!empty($checkedCostConf)){?>
+if(!empty($checkedCostConf)){
+    ?>
     <table>
         <tr>
             <th>Particulars</th><th>Price</th><th>Bus No</th>
@@ -12,23 +13,23 @@ if(!empty($checkedCostConf)){?>
         <?php
         $grandTotal = 0;
         foreach($checkedCostConf as $cCC){
-            $checked_id = $cCC->checked_id;
+            $checked_id = $cCC["checked_id"];
             $checked_id_arr = explode(',',$checked_id);
             $criteria = new CDbCriteria();
             $criteria->addInCondition("id", $checked_id_arr);
             $checked_particulars = CostConfiguration::model()->findAll($criteria);
-            $checked_rate_arr = explode(', ',$cCC->checked_rate);
+            $checked_rate_arr = explode(', ',$cCC["checked_rate"]);
             $checked_rate_str = implode('+',$checked_rate_arr);
-            $bus = Bus::model()->findByPk($cCC->bus_id);
+            $bus = Bus::model()->findByPk($cCC["bus_id"]);
 
-            $routeCost = CheckedRouteCost::model()->findAllByAttributes(array('checked_cost_conf_id'=>$cCC->id));
-            if($cCC->checked_others==1) {
-                $others = CheckedOthers::model()->findAllByAttributes(array('checked_cost_conf_id' => $cCC->id));
+            $routeCost = CheckedRouteCost::model()->findAllByAttributes(array('checked_cost_conf_id'=>$cCC["id"]));
+            if($cCC["checked_others"]==1) {
+                $others = CheckedOthers::model()->findAllByAttributes(array('checked_cost_conf_id' => $cCC["id"]));
             }else{
                 $others=array();
             }
-            if($cCC->checked_others==2) {
-                $reserve = Reserve::model()->findAllByAttributes(array('checked_cost_conf_id' => $cCC->id));
+            if($cCC["checked_others"]==2) {
+                $reserve = Reserve::model()->findAllByAttributes(array('checked_cost_conf_id' => $cCC["id"]));
             }else{
                 $reserve=array();            }
 //foreach($routeCost as $rC){echo $rC->id;}
@@ -42,17 +43,17 @@ if(!empty($checkedCostConf)){?>
                         echo $cp->particular.', ';
                     }
                     foreach($routeCost as $rC){
-                        if($rC->checked_cost_conf_id == $cCC->id){
+                        if($rC->checked_cost_conf_id == $cCC["id"]){
                             echo 'route cost, ';
                         }
                     }
                     foreach($others as $ot){
-                        if($ot->checked_cost_conf_id == $cCC->id){
+                        if($ot->checked_cost_conf_id == $cCC["id"]){
                             echo 'others,';
                         }
                     }
                     foreach($reserve as $res){
-                        if($res->checked_cost_conf_id == $cCC->id){
+                        if($res->checked_cost_conf_id == $cCC["id"]){
                             echo 'Reserve,';
                         }
                     }
@@ -63,7 +64,7 @@ if(!empty($checkedCostConf)){?>
                     $gt1 = 0;
                     if(!empty($routeCost)){
                         foreach($routeCost as $rC){
-                            if($rC->checked_cost_conf_id == $cCC->id){
+                            if($rC->checked_cost_conf_id == $cCC["id"]){
                                 $o = null;
 //                                $rr = explode(',', $rC->route_cost);
 //                                $r = array_sum($rr);
@@ -79,7 +80,7 @@ if(!empty($checkedCostConf)){?>
                     $gt2 = 0;
                     if(!empty($others)){
                         foreach($others as $ot){
-                            if($ot->checked_cost_conf_id == $cCC->id){
+                            if($ot->checked_cost_conf_id == $cCC["id"]){
                                 if(!empty($routeCost)){
 //                                    $rr = explode(',', $rC->route_cost);
 //                                    $r = array_sum($rr);
@@ -97,7 +98,7 @@ if(!empty($checkedCostConf)){?>
                         $gt2 = $costConfTotal +$r + $gt1 + $gt2;
                     }if(!empty($reserve)){
                         foreach($reserve as $res){
-                            if($res->checked_cost_conf_id == $cCC->id){
+                            if($res->checked_cost_conf_id == $cCC["id"]){
                                 $resamt= $res->samiti_sulka+$res->bhalai_kosh+$res->samrakshan+$res->ticket+$res->sahayog+$res->bima+$res->bibidh+$res->mandir+$res->jokhim+$res->anugaman+$res->bi_bya_sulka+$res->ma_kosh;
                             }else{
                                 $resamt=null;

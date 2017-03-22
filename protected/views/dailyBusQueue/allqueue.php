@@ -37,10 +37,7 @@ if(!empty($dailyBusQueue)){?>
         $route_sn = 1;
         foreach($dailyBusQueue as $dBQ){
             $routeName = Route::model()->findByPk($dBQ->route_id);
-
-            $time_id_arr = explode(',', $dBQ->time_id);
-            $bus_id_arr = explode(',',$dBQ->bus_id);
-            $payment_stat = explode(',',$dBQ->payment_status);
+            $queuedBus = DailyQueuedBus::model()->findAllByAttributes(array('daily_bus_queue_id'=>$dBQ->id));
             ?>
             <table  class="item large" border="1" cellspacing="0" cellpadding="0">
                 <tr>
@@ -56,17 +53,16 @@ if(!empty($dailyBusQueue)){?>
                 </tr>
                 <?php
                 $sn = 1;
-                foreach (array_keys($time_id_arr + $bus_id_arr) as $tb) {
-                    $time = RouteTime::model()->findByPk($time_id_arr[$tb]);
-                    $bus = Bus::model()->findByPk($bus_id_arr[$tb]);
-
+                foreach ($queuedBus as $qb) {
+                    $time = RouteTime::model()->findByPk($qb->time_id);
+                    $bus = Bus::model()->findByPk($qb->bus_id);
                     ?>
                     <tr>
                         <td><?php echo $sn;?></td>
                         <td></td>
                         <td><?php echo $bus->bus_no;?></td>
                         <td><?php echo $time->route_time;?></td>
-                        <td><?php if(in_array($bus->id, $payment_stat)){echo 'Paid';}?></td>
+                        <td><?php if($qb->payment_status==1){echo 'Paid';}?></td>
                     </tr>
                     <?php $sn = $sn +1 ; } ?>
             </table>

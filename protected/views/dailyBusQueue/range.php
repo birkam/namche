@@ -1,7 +1,12 @@
+<style>
+    th{font-size: 10px;}
+</style>
 <script type="text/javascript" src="<?php echo Yii::app()->request->baseUrl; ?>/js/print/print.js"></script>
 <form action="<?php echo Yii::app()->request->baseUrl; ?>/DailyBusQueue/range" method="POST">
-    <input type="text" name="range" value="<?php echo @$_POST['range']?>" placeholder="Date Range" id="range" required="true" readonly>
-    <input type="submit" value="Submit" name="submit">
+    <input type="text" name="range" value="<?php echo @$_POST['range']; ?>" placeholder="Date Range" id="range" required="true" readonly>
+    <input type="submit" value="Date Only" name="date_only">
+    <input type="submit" value="Date+User" name="date_user">
+    <input type="submit" value="User Only" name="user_only">
 </form>
 
 <?php
@@ -11,22 +16,25 @@ if(!empty($checkedCostConf)){?>
         <table cellpadding="0" cellspacing="0" width="100%" class="tableStatic">
             <thead>
             <tr>
-                <th width="6.25%">Date</th>
-                <th width="6.25%">Defined</th>
-                <th width="6.25%">samiti sulka</th>
-                <th width="6.25%">bhalai kosh</th>
-                <th width="6.25%">samrakshan</th>
-                <th width="6.25%">ticket</th>
-                <th width="6.25%">sahayog</th>
-                <th width="6.25%">bima</th>
-                <th width="6.25%">bibidh</th>
-                <th width="6.25%">mandir</th>
-                <th width="6.25%">jokhim</th>
-                <th width="6.25%">anugaman</th>
-                <th width="6.25%">bi bya sulka</th>
-                <th width="6.25%">ma kosh</th>
-                <th width="6.25%">Miscellaneous</th>
-                <th width="6.25%">Row Total</th>
+                <th width="5.88%">Date</th>
+                <th width="5.88%">Defined</th>
+                <th width="5.88%">samiti sulka</th>
+                <th width="5.88%">bhalai kosh</th>
+                <th width="5.88%">samrakshan</th>
+                <th width="5.88%">ticket</th>
+                <th width="5.88%">sahayog</th>
+                <th width="5.88%">bima</th>
+                <th width="5.88%">bibidh</th>
+                <th width="5.88%">mandir</th>
+                <th width="5.88%">jokhim</th>
+                <th width="5.88%">anugaman</th>
+                <th width="5.88%">bi bya sulka</th>
+                <th width="5.88%">ma kosh</th>
+                <th width="5.88%">Misc.</th>
+                <th width="5.88%">Row Total</th>
+                <?php if($type=='date_user' or $type=='user_only'){ ?>
+                    <th width="5.88%">Collected By</th>
+                <?php } ?>
             </tr>
             </thead>
             <tbody>
@@ -115,7 +123,11 @@ if(!empty($checkedCostConf)){?>
                 $final_tot2=$final_tot2+$rowtotal;
                 ?>
                 <tr>
-                    <td><?php echo $cCC['created_nep_date'];?></td>
+                    <?php if($type=='user_only'){ ?>
+                        <td><?php @$_POST['range'];?></td>
+                    <?php }else{ ?>
+                        <td><?php echo $cCC['created_nep_date'];?></td>
+                    <?php } ?>
                     <td><?php echo array_sum($checked_rate_arr) ;?></td>
                     <td><?php echo $tot_samiti_sulka;?></td>
                     <td><?php echo $tot_bhalai_kosh;?></td>
@@ -131,8 +143,11 @@ if(!empty($checkedCostConf)){?>
                     <td><?php echo $tot_ma_kosh;?></td>
                     <td><?php echo array_sum($other_amt_arr);?></td>
                     <td><?php echo $rowtotal;?></td>
+                    <?php if($type=='date_user' or $type=='user_only'){ ?>
+                        <td><?php $user=UserAccount::model()->findByPk($cCC['created_by']); if(!empty($user)){echo $user->user_name;}else{echo '-';} ?></td>
+                    <?php } ?>
                 </tr>
-            <?php
+                <?php
             }
             ?>
             </tbody>
@@ -153,6 +168,7 @@ if(!empty($checkedCostConf)){?>
                 <th><?php echo $col_tot_ma_kosh;?></th>
                 <th><?php echo $mis_tot;?></th>
                 <th><?php echo $final_tot1;?></th>
+                <th></th>
                 <?php
                 ?>
             </tr>
@@ -182,5 +198,5 @@ if(!empty($checkedCostConf)){?>
 
 <script>
     $('#range').calendarsPicker({rangeSelect: true, monthsToShow: 1, showTrigger: '#calImg', calendar: $.calendars.instance('nepali'), dateFormat: 'yyyy-mm-dd'});
-//    $('#range').attr('required',true);
+    //    $('#range').attr('required',true);
 </script>

@@ -7,10 +7,6 @@
  * @property string $id
  * @property integer $route_id
  * @property string $queue_date
- * @property string $time_id
- * @property string $bus_id
- * @property string $queue_serial
- * @property integer $bus_status
  * @property string $created_by
  * @property string $created_date
  */
@@ -50,16 +46,15 @@ class DailyBusQueue extends CActiveRecord
 		// will receive user inputs.
 		return array(
 			array('queue_date', 'required'),
-			array('route_id, bus_status', 'numerical', 'integerOnly'=>true),
+			array('route_id', 'numerical', 'integerOnly'=>true),
 			array('queue_date', 'length', 'max'=>10),
-			array('time_id, bus_id, queue_serial', 'length', 'max'=>300),
 			array('created_by', 'length', 'max'=>20),
             array( 'queue_date','compare','compareValue' => $nepali_date,'operator'=>'>=', 'allowEmpty'=>'false', 'message' => '{attribute} should be later than or equal to "{compareValue}".'),
     //        array('queue_date', ''),
 			array('created_date', 'safe'),
 			// The following rule is used by search().
 			// @todo Please remove those attributes that should not be searched.
-			array('id, route_id, queue_date, time_id, route_name, bus_id, queue_serial, bus_status, created_by, created_date', 'safe', 'on'=>'search'),
+			array('id, route_id, queue_date, route_name, created_by, created_date', 'safe', 'on'=>'search'),
 		);
 	}
 
@@ -84,10 +79,6 @@ class DailyBusQueue extends CActiveRecord
 			'id' => 'ID',
 			'route_id' => 'Route',
 			'queue_date' => 'Queue Date',
-			'time_id' => 'Time',
-			'bus_id' => 'Bus',
-			'queue_serial' => 'Queue Serial',
-			'bus_status' => 'Bus Status',
 			'created_by' => 'Created By',
 			'created_date' => 'Created Date',
             'route_name' => 'Route Name',
@@ -116,10 +107,6 @@ class DailyBusQueue extends CActiveRecord
 		$criteria->compare('route_id',$this->route_id);
         $criteria->compare('bus_route.route_name', $this->route_name, true);
 		$criteria->compare('queue_date',$this->queue_date,true);
-		$criteria->compare('time_id',$this->time_id,true);
-		$criteria->compare('bus_id',$this->bus_id,true);
-		$criteria->compare('queue_serial',$this->queue_serial,true);
-		$criteria->compare('bus_status',$this->bus_status);
 		$criteria->compare('created_by',$this->created_by,true);
 		$criteria->compare('created_date',$this->created_date,true);
 

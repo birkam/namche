@@ -6,35 +6,55 @@
 </form>
 
 <?php
-if(!empty($route)){?>
-    <table>
-        <tr>
-            <th>Bus No</th><th>Route</th><th>Queue Date</th><th>Queue Time</th><th>Price</th>
-        </tr>
-        <?php
-        $grandTotal = 0;
-        foreach($route as $r){
-            $bus = Bus::model()->findByPk($r->bus_id);
-            $routeName = Route::model()->findByPk($r->route_id);
-            $queueTime = RouteTime::model()->findByPk($r->queue_time_id);
-//            $cost_arr = explode(',', $r->route_cost);
-//            $sum = array_sum($cost_arr);
-            $sum=$r->samiti_sulka+$r->bhalai_kosh+$r->samrakshan+$r->ticket+$r->sahayog+$r->bima+$r->bibidh+$r->mandir+$r->jokhim+$r->anugaman+$r->bi_bya_sulka+$r->ma_kosh;
-            ?>
+if(!empty($checkedCostConf)){?>
+    <div class="widget first">
+        <div class="head"><h5 class="iFrames">Collected From Route</h5></div>
+        <table cellpadding="0" cellspacing="0" width="100%" class="tableStatic">
+            <thead>
             <tr>
-                <td><?php echo $bus->bus_no;?></td>
-                <td><?php echo $routeName->route_name;?></td>
-                <td><?php echo $r->queue_date;?></td>
-                <td><?php echo $queueTime->route_time;?></td>
-                <td><?php echo $r->samiti_sulka.'+'.$r->bhalai_kosh.'+'.$r->samrakshan.'+'.$r->ticket.'+'.$r->sahayog.'+'.$r->bima.'+'.$r->bibidh.'+'.$r->mandir.'+'.$r->jokhim.'+'.$r->anugaman.'+'.$r->bi_bya_sulka.'+'.$r->ma_kosh.'=<strong>'.$sum.'</strong>';?></td>
+                <th>Bus No</th><th>Route</th><th>Queue Date</th><th>Queue Time</th><th>Price</th><th>Receipt No.</th>
             </tr>
-        <?php
-            $grandTotal = $grandTotal + $sum;
-        }
-        ?>
-        <tr><th colspan="4" style="text-align: center">Grand Total = </th><th><?php echo $grandTotal;?></th></tr>
+            </thead>
+            <tbody>
+            <?php
+            $grandTotal = 0;
+            foreach($checkedCostConf as $cCC){
+                $bus = Bus::model()->findByPk($cCC['bus_id']);
+                if($cCC['checked_others']==null){
+                    $routeName = Route::model()->findByPk($cCC['route_id']);
+                    $queueTime = RouteTime::model()->findByPk($cCC['queue_time_id']);
+                    $routeCost=$cCC['crc_samiti_sulka']+$cCC['crc_bhalai_kosh']+$cCC['crc_samrakshan']+$cCC['crc_ticket']+$cCC['crc_sahayog']+$cCC['crc_bima']+$cCC['crc_bibidh']+$cCC['crc_mandir']+$cCC['crc_jokhim']+$cCC['crc_anugaman']+$cCC['crc_bi_bya_sulka']+$cCC['crc_ma_kosh'];
+                    ?>
+                    <tr>
+                        <td><?php echo $bus->bus_no;?></td>
+                        <td><?php echo $routeName->route_name;?></td>
+                        <td><?php echo $cCC['queue_date'];?></td>
+                        <td><?php echo $queueTime->route_time;?></td>
+                        <td><?php echo $routeCost; ?></td>
+                        <td><a target="_blank" href="<?php echo Yii::app()->request->baseUrl.'/checkedcostconfiguration/'.$cCC['id']; ?>"><?php echo $cCC['receipt_no']; ?></a></td>
+                    </tr>
+                <?php }else{
+                    $routeCost=$cCC['res_samiti_sulka']+$cCC['res_bhalai_kosh']+$cCC['res_samrakshan']+$cCC['res_ticket']+$cCC['res_sahayog']+$cCC['res_bima']+$cCC['res_bibidh']+$cCC['res_mandir']+$cCC['res_jokhim']+$cCC['res_anugaman']+$cCC['res_bi_bya_sulka']+$cCC['res_ma_kosh'];
+                    ?>
+                    <tr>
+                        <td><?php echo $bus->bus_no;?></td>
+                        <td>Reserve</td>
+                        <td><?php echo $cCC['reserve_date'];?></td>
+                        <td><?php echo $cCC['reserve_time'];?></td>
+                        <td><?php echo $routeCost; ?></td>
+                        <td><a target="_blank" href="<?php echo Yii::app()->request->baseUrl.'/reserve/'.$cCC['id']; ?>"><?php echo $cCC['receipt_no']; ?></a></td>
+                    </tr>
+                <?php }
+                $grandTotal = $grandTotal + $routeCost;
+            }
+            ?>
+            </tbody>
+            <tfoot>
+            <tr><th colspan="4" style="text-align: center">Grand Total = </th><th><?php echo $grandTotal;?></th><th></th></tr>
+            </tfoot>
 
-    </table>
+        </table>
+    </div>
 <?php }else{
     $user = Yii::app()->getComponent('user');
     $user->setFlash(

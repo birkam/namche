@@ -75,7 +75,8 @@ $this->widget('bootstrap.widgets.TbAlert', array(
         'template' => '{view}',
         'buttons' => array(
             'view' => array(
-                'label'=> 'View',
+                'label'=> 'View1',
+                'url'=>'Yii::app()->controller->createUrl("dailybusqueue/view1",array("id"=>$data->id))',
                 'options'=>array(
                     'class'=>'btn btn-small view'
                 )
