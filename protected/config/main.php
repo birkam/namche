@@ -92,7 +92,7 @@ return array(
 		// uncomment the following to use a MySQL database
 
 		'db'=>array(
-			'connectionString' => 'mysql:host=localhost;dbname=db_namche',
+			'connectionString' => 'mysql:host=localhost;dbname=db_namche_new',
 			'emulatePrepare' => true,
 			'username' => 'root',
 			'password' => '',

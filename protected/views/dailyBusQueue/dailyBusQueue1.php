@@ -6,6 +6,15 @@
  * Time: 4:26 PM
  */
 ?>
+<style>
+    .cross_1{
+        text-decoration: line-through;
+    }
+    .cross_2{
+        text-decoration: line-through;
+        color: #ff0000;
+    }
+</style>
 <?php
 $this->widget('bootstrap.widgets.TbAlert', array(
     'fade' => true,
@@ -91,6 +100,7 @@ if(!empty($engDate)){
             <td>Bus No.</td>
             <td>Replace</td>
             <td>Payment</td>
+            <td>Remarks</td>
         </tr>
         </thead>
         <tbody>
@@ -98,10 +108,25 @@ if(!empty($engDate)){
         foreach ($bus_queued as $bqd) {
             $routeTime = RouteTime::model()->findByPk($bqd->time_id);
             $busInfo = Bus::model()->findByPk($bqd->bus_id);
+            if($bqd->bus_remove_type>0){//remove type => 1 = temp, 2=permanent
+                $criteria=new CDbCriteria;
+                $criteria->condition = 'daily_queued_bus_id=:daily_queued_bus_id and daily_bus_queue_id=:daily_bus_queue_id';
+                $criteria->params = array('daily_queued_bus_id'=>$bqd->id, 'daily_bus_queue_id'=>$bqd->daily_bus_queue_id);
+                $criteria->order = "id desc";
+                $criteria->limit = 1;
+                $removedbus = BusRemoveHistory::model()->find($criteria);
+            }
             ?>
             <tr>
                 <td><?php echo $routeTime->route_time; ?></td>
-                <td><a href="<?php echo Yii::app()->request->baseUrl; ?>/Bus/<?php echo $bqd->bus_id; ?>"><?php echo $busInfo->bus_no; ?></a></td>
+                <td>
+                    <?php if($bqd->bus_remove_type>0){
+                        $old_bus = Bus::model()->findByPk($removedbus->old_bus_id);
+                        ?>
+                        <a href="<?php echo Yii::app()->request->baseUrl; ?>/Bus/<?php echo $removedbus->old_bus_id; ?>" class="<?= 'cross_'.$bqd->bus_remove_type;?>"><?php echo $old_bus->bus_no; ?></a> /
+                    <?php } ?>
+                    <a href="<?php echo Yii::app()->request->baseUrl; ?>/Bus/<?php echo $bqd->bus_id; ?>"><?php echo $busInfo->bus_no; ?></a>
+                </td>
                 <form action="<?php echo Yii::app()->request->baseUrl; ?>/DailyBusQueue/BusRemove" method="POST">
                     <td>
                         <?php
@@ -110,7 +135,8 @@ if(!empty($engDate)){
                         <?php }elseif($model->queue_date<$nepali_date){
                             echo 'Too late to replaced.';
                         }else{ ?>
-                            <input type="hidden" name="id" value="<?php echo $model->id;?>">
+                            <input type="hidden" name="id" value="<?php echo $model->id;?>" class="dbq_id">
+                            <input type="hidden" name="dqb_id" value="<?php echo $bqd->id;?>" class="dqb_id">
                             <input type="hidden" name="bus_id" value="<?php echo $bqd->bus_id;?>">
                             <input type="hidden" name="queue_serial" value="<?php echo $bqd->queue_serial;?>">
                             <input type="hidden" name="time_id" value="<?php echo $bqd->time_id;?>">
@@ -131,6 +157,11 @@ if(!empty($engDate)){
 
                     </td>
                 </form>
+                <td>
+                    <?php if($bqd->bus_remove_type>0){
+                        echo  $removedbus->remarks;
+                    } ?>
+                </td>
             </tr>
         <?php  }?>
         </tbody>
@@ -146,19 +177,21 @@ if(!empty($engDate)){
     </div>
 </div>
 <script>
-$('.replace').on('click', function () {
+    $('.replace').on('click', function () {
 //    $('#replaceModal').modal("show");
-    $.ajax({
-        type: "POST",
-        url: "<?php echo Yii::app()->request->baseUrl; ?>/dailybusqueue/replace",
-//        data: data,
-        success: function (response) {
+        var dbq_id = $(this).siblings(".dbq_id").attr("value");
+        var dqb_id = $(this).siblings(".dqb_id").attr("value");
+        $.ajax({
+            type: "POST",
+            url: "<?php echo Yii::app()->request->baseUrl; ?>/dailybusqueue/replace",
+            data: {'dbq':dbq_id, 'dqb':dqb_id},
+            success: function (response) {
 //            alert(response);
-            $('#replaceModal').modal("show").find('.load-data').html(response);
-        },
-        error: function(jqXHR, textStatus, errorThrown) {
-            console.log(textStatus, errorThrown);
-        }
+                $('#replaceModal').modal("show").find('.load-data').html(response);
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.log(textStatus, errorThrown);
+            }
+        });
     });
-});
 </script>

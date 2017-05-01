@@ -401,8 +401,90 @@ class DailyBusQueueController extends RController
     }
 
     public function actionReplace(){
-//        echo 1; exit;
-        echo $this->renderPartial('replace');
+        $replaceModel = new ReplaceModel();
+        $dbq_id = @$_POST["dbq"];//1165;//
+        $dqb_id = @$_POST["dqb"];//5956;//
+//        $dbq_id = 1165;
+//        $dqb_id = 5956;
+        if($dbq_id>0 and $dqb_id>0){
+//            $dailybusqueue = DailyBusQueue::model()->findByPk(['id'=>$dbq_id]);
+            $dailyqueued = DailyQueuedBus::model()->findByAttributes(['id'=>$dqb_id,'daily_bus_queue_id'=>$dbq_id]);
+
+//            $sql = "select bir.bus_id, b.bus_no from tbl_bus_inside_route bir left join tbl_bus b on b.id=bir.bus_id where bir.route_id='$dailybusqueue->route_id' 
+//                  and bir.bus_status=1 and bir.bus_id!='$dailyqueued->bus_id'";
+            $sql = "select id as bus_id, bus_no from tbl_bus where id!=$dailyqueued->bus_id";
+            $command = Yii::app()->db->createCommand($sql);
+            $bus_replace= $command->queryAll();
+            $old_bus_info = Bus::model()->findByPk($dailyqueued->bus_id);
+        }
+        echo $this->renderPartial('replace', ['bus_replace'=>$bus_replace,'dbq_id'=>$dbq_id,'dqb_id'=>$dqb_id, 'replaceModel'=>$replaceModel, 'old_bus'=>$old_bus_info], false, true);
+//        echo $this->render('replace', ['bus_replace'=>$bus_replace, 'replaceModel'=>$replaceModel]);
+    }
+    public function actionReplace1(){
+        $replaceModel = new ReplaceModel();
+        $dbq_id = 1165;
+        $dqb_id = 5956;
+        if($dbq_id>0 and $dqb_id>0){
+//            $dailybusqueue = DailyBusQueue::model()->findByPk(['id'=>$dbq_id]);
+            $dailyqueued = DailyQueuedBus::model()->findByAttributes(['id'=>$dqb_id,'daily_bus_queue_id'=>$dbq_id]);
+
+//            $sql = "select bir.bus_id, b.bus_no from tbl_bus_inside_route bir left join tbl_bus b on b.id=bir.bus_id where bir.route_id='$dailybusqueue->route_id' 
+//                  and bir.bus_status=1 and bir.bus_id!='$dailyqueued->bus_id'";
+            $sql = "select id as bus_id, bus_no from tbl_bus where id!=$dailyqueued->bus_id";
+            $command = Yii::app()->db->createCommand($sql);
+            $bus_replace= $command->queryAll();
+            $old_bus_info = Bus::model()->findByPk($dailyqueued->bus_id);
+        }
+        echo $this->render('replace', ['bus_replace'=>$bus_replace,'dbq_id'=>$dbq_id,'dqb_id'=>$dqb_id, 'replaceModel'=>$replaceModel, 'old_bus'=>$old_bus_info]);
+    }
+
+    public function actionReplacesave(){
+        $model = new ReplaceModel();
+        $modelRemoveHis = new BusRemoveHistory();
+        if(isset($_POST['ReplaceModel'])){
+            $model->attributes=$_POST['ReplaceModel'];
+            if($model->validate()){
+                $busqueued = DailyQueuedBus::model()->findByPk($model->dqb_id);
+                $dailybusqueue = DailyBusQueue::model()->findByPk($model->dbq_id);
+                if($busqueued->saveAttributes(array('bus_id'=>$model->replace_new_bus_id,'bus_remove_type'=>$model->replace_type))){
+                    if ($model->replace_type==2){ //replace type=> 1 = temp, 2=permanent
+                        $bus_inside_route = BusInsideRoute::model()->findByAttributes(['route_id'=>$dailybusqueue->route_id,'bus_id'=>$model->replace_old_bus_id]);
+
+                        $new_bus_inside = new BusInsideRoute();
+                        $new_bus_inside->route_id = $bus_inside_route->route_id;
+                        $new_bus_inside->bus_id = $model->replace_new_bus_id;
+                        $new_bus_inside->queue = $bus_inside_route->queue;
+                        $new_bus_inside->bus_status = 1;
+                        $new_bus_inside->bus_assigned_date = date('Y-m-d');
+                        $new_bus_inside->created_by = Yii::app()->user->user_ac_id;
+                        $new_bus_inside->created_date = date('Y-m-d H:i:s');
+                        $new_bus_inside->save(false);
+
+                        $bus_inside_route->saveAttributes(array('bus_status'=>0, 'bus_out_date'=>date('Y-m-d')));
+                    }
+                    $modelRemoveHis->remove_type=$model->replace_type;//replace type=> 1 = temp, 2=permanent
+                    $modelRemoveHis->daily_bus_queue_id=$model->dbq_id;
+                    $modelRemoveHis->daily_queued_bus_id=$model->dqb_id;
+                    $modelRemoveHis->old_bus_id=$model->replace_old_bus_id;
+                    $modelRemoveHis->new_bus_id=$model->replace_new_bus_id;
+                    $modelRemoveHis->remarks=$model->remarks;
+                    $modelRemoveHis->created_by=Yii::app()->user->user_ac_id;
+                    $modelRemoveHis->created_date=date('Y-m-d H:i:s', time());
+                    $modelRemoveHis->save(false);
+
+                    $user = Yii::app()->getComponent('user');
+                    $user->setFlash(
+                        'success',
+                        "Bus Replaced Successfully"
+                    );
+                    echo 1;
+                    die();
+                }
+            }else{
+                echo 2;
+                die();
+            }
+        }
     }
 
     public function actionTransaction(){
